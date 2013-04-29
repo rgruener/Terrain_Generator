@@ -11,8 +11,10 @@ Terrain::Terrain(int terrain_order /*= 8 */, float roughness_constant /* = 0.7f 
                     float range /* = 1.0f */, float init_height /* = 0f */){
     this->side_size = pow(2,terrain_order) + 1;
     this->roughness_constant = roughness_constant;
-    this->points = (point4 *)malloc(this->side_size^2 * 4 * sizeof(point4));
-    this->colors = (color4 *)malloc(this->side_size^2 * 4 * sizeof(color4));
+    //this->points = (point4 *)malloc(this->side_size^2 * 4 * sizeof(point4));
+    //this->colors = (color4 *)malloc(this->side_size^2 * 4 * sizeof(color4));
+    this->points.resize(this->side_size);
+    this->colors.resize(this->side_size);
     this->terrain.resize(this->side_size);
     for (int i=0; i < side_size; i++){
         terrain[i].resize(side_size,init_height);
@@ -116,11 +118,11 @@ void Terrain::storePoints(){
 }
 
 point4 *Terrain::getPoints(){
-    return this->points;
+    return &this->points[0];
 }
 
 color4 *Terrain::getColors(){
-    return this->colors;
+    return &this->colors[0];
 }
 
 int Terrain::getNumPoints(){

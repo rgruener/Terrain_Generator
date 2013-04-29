@@ -20,8 +20,8 @@ typedef Angel::vec4 point4;
 class Terrain {
 
     private:
-        point4 *points;
-        color4 *colors;
+        vector<point4> points;
+        vector<color4> colors;
 
         vector<vector <float>  > terrain;
         int side_size;
