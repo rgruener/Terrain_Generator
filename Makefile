@@ -10,5 +10,8 @@ terrain.o: terrain.cpp terrain.h
 InitShader.o: InitShader.cpp
 	g++ -c InitShader.cpp -I./include
 
+debug: main.o terrain.o InitShader.o
+	g++ -g -o terrain.exe main.o terrain.o InitShader.o -lGLEW -lglut -lGL -lXmu -lX11 -lm -I./include
+
 clean:
 	rm -f *.exe *.o *.stackdump *~ *.swp *.swo *.swn

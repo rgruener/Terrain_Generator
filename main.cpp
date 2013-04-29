@@ -39,6 +39,7 @@ void init(){
 
     int num_points = terrain->getNumPoints();
 
+    cout << " here " << endl;
     // Create a vertex array object
     GLuint vao;
     glGenVertexArrays( 1, &vao );
@@ -82,22 +83,22 @@ void display( void ){
     cout << "in display" << endl;
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
-    mat4 mv = RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
-    mat4 rot;
+    //mat4 mv = RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
+    //mat4 rot;
 
-    glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
+    //glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
 
-    int num_points = terrain->getNumPoints();
+    //int num_points = terrain->getNumPoints();
     
-    points = terrain->getPoints();
-    colors = terrain->getColors();
+    //points = terrain->getPoints();
+    //colors = terrain->getColors();
 
-    cout << "num points: " << num_points << endl;
+    //cout << "num points: " << num_points << endl;
 
-    glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(point4)*num_points, points );
-    glBufferSubData( GL_ARRAY_BUFFER, sizeof(point4)*num_points, sizeof(color4)*num_points, colors );
+    //glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(point4)*num_points, points );
+    //glBufferSubData( GL_ARRAY_BUFFER, sizeof(point4)*num_points, sizeof(color4)*num_points, colors );
 
-    glDrawArrays( GL_LINES, 0, num_points );
+    //glDrawArrays( GL_LINES, 0, num_points );
 
     glutSwapBuffers();
 }
