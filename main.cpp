@@ -35,13 +35,13 @@ int dragging = 0;
 // OpenGL initialization
 void init(){
 
-    terrain = new Terrain(10, 0.7, 1);
+    terrain = new Terrain(3, 0.7, 1);
 
     points = terrain->getPoints();
     colors = terrain->getColors();
 
     numVertices = terrain->getNumPoints();
-    //terrain->dumpHeightMap();
+    terrain->dumpHeightMap();
 
     // Create a vertex array object
     GLuint vao;

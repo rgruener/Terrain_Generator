@@ -5,8 +5,9 @@
 #include "terrain.h"
 #include <iostream>
 
-#define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
-#define NORMALIZE(point,factor) (float)(point)/(float)(factor*1.3f)
+#define RAND_NUM(num_range) 0
+//#define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
+#define NORMALIZE(point,factor) ((float)(point)/(float)(factor*1.3f))
 
 Terrain::Terrain(int terrain_order /*= 8 */, float roughness_constant /* = 0.7f */, 
                     float range /* = 1.0f */, float init_height /* = 0f */){
@@ -20,11 +21,8 @@ Terrain::Terrain(int terrain_order /*= 8 */, float roughness_constant /* = 0.7f 
         terrain[i].resize(side_size,init_height);
     }
     srand(time(NULL));
-    cout << "Before generate map" << endl;
     generateHeightMap();
-    cout << "After generate map" << endl;
-    storePoints();
-    cout << "After points stored" << endl;
+    storePointsLines();
 }
 
 
@@ -39,7 +37,9 @@ void Terrain::generateHeightMap(){
         // Perform the diamond step
         for (i=0; i < this->side_size-1; i+=stride*2){
             for (j=0; j < this->side_size-1; j+=stride*2){
-                terrain[i+stride][j+stride] = avgSquareHeight(i,j,stride*2) + RAND_NUM(cur_range);
+                terrain[i+stride][j+stride] = avgSquareHeight(i,j,stride*2) + 
+                                                RAND_NUM(cur_range);
+                cout << "DIAMOND: " << terrain[i+stride][j+stride] << endl;
             }
         }
 
@@ -52,6 +52,7 @@ void Terrain::generateHeightMap(){
                     j += stride;
                 }
                 terrain[i][j] = avgDiamondHeight(i,j,stride) + RAND_NUM(cur_range);
+                cout << "SQUARE: " << terrain[i][j] << endl;
             }
         }
         cur_range *= powf(2.0,-this->roughness_constant);
@@ -63,25 +64,31 @@ float Terrain::avgSquareHeight(int i, int j, int size){
     int high_index_i = i + size;
     int high_index_j = j + size;
     return (this->terrain[i][j] + this->terrain[i][high_index_j] + 
-                this->terrain[high_index_i][j] + this->terrain[high_index_i][high_index_j]) / 4.0f;
+                this->terrain[high_index_i][j] +
+                this->terrain[high_index_i][high_index_j]) / 4.0f;
     
 }
 
 float Terrain::avgDiamondHeight(int i, int j, int stride){
     if (i == 0){
-        return (this->terrain[this->side_size-1-stride][j] + this->terrain[i+stride][j] + this->terrain[i][j-stride] + 
+        return (this->terrain[this->side_size-1-stride][j] + 
+                    this->terrain[i+stride][j] + this->terrain[i][j-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
     } else if (i = this->side_size-1){
-        return (this->terrain[i-stride][j] + this->terrain[stride][j] + this->terrain[i][j-stride] + 
+        return (this->terrain[i-stride][j] + this->terrain[stride][j] +
+                    this->terrain[i][j-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
     } else if (j == 0){
-        return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + this->terrain[i][this->side_size-1-stride] + 
+        return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + 
+                    this->terrain[i][this->side_size-1-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
     } else if (j = this->side_size-1){
-        return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + this->terrain[i][j-stride] + 
+        return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + 
+                    this->terrain[i][j-stride] + 
                     this->terrain[i][stride]) / 4.0f;
     } else {
-        return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + this->terrain[i][j-stride] + 
+        return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + 
+                    this->terrain[i][j-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
     }
 
@@ -94,24 +101,30 @@ void Terrain::storePointsLines(){
     for (i=0; i<this->side_size; i++){
         for (j=0; j<this->side_size-1; j++){
             // Y Line
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j+1-center_factor,center_factor),terrain[i][j+1],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
+            points[k] = point4(NORMALIZE(i-center_factor,center_factor),
+                                NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
+            colors[k++] = color4(1.0, 0.0, 1.0, 1.0); // White
+            points[k] = point4(NORMALIZE(i-center_factor,center_factor),
+                                NORMALIZE(j+1-center_factor,center_factor),terrain[i][j+1],1.0);
+            colors[k++] = color4(1.0, 0.0, 1.0, 1.0); // White
             // X Line
             if (i < this->side_size-1){
-                points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
+                points[k] = point4(NORMALIZE(i-center_factor,center_factor),
+                                    NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
                 colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-                points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
+                points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),
+                                    NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
                 colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
             }
         }
         // Final X Line
         if (i < this->side_size-1){
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
+            points[k] = point4(NORMALIZE(i-center_factor,center_factor),
+                                NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
+            colors[k++] = color4(1.0, 1.0, 0.0, 1.0); // White
+            points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),
+                                NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
+            colors[k++] = color4(1.0, 1.0, 0.0, 1.0); // White
         }
     }
     this->num_points = k;
