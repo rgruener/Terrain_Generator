@@ -23,10 +23,10 @@ GLfloat scale = 1.0;
 
 // Array for command line arguments
 int method = TRIANGLES;
-int terrain_order = 8;
+int terrain_order = 5;
 float roughness_constant = 0.7;
-float range = 1.0;
-float init_height = 1.0;
+float range = 0.8;
+float init_height = 0.0;
 
 GLuint  model_view;  // The location of the "model_view" shader uniform variable
 GLuint buffer;
@@ -81,10 +81,41 @@ void init(){
     glVertexAttribPointer( vColor, 4, GL_FLOAT, GL_FALSE, 0,
                BUFFER_OFFSET(sizeof(point4)*numVertices) );
 
+    // Initialize shader lighting parameters
+    point4 light_position( 0.0, 0.0, -1.0, 0.0 );
+    color4 light_ambient( 0.2, 0.2, 0.2, 1.0 );
+    color4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
+    color4 light_specular( 1.0, 1.0, 1.0, 1.0 );
 
-    model_view = glGetUniformLocation( program, "model_view" );
+    color4 material_ambient( 1.0, 0.0, 1.0, 1.0 );
+    color4 material_diffuse( 1.0, 0.8, 0.0, 1.0 );
+    color4 material_specular( 1.0, 0.8, 0.0, 1.0 );
+    float  material_shininess = 100.0;
+
+    color4 ambient_product = light_ambient * material_ambient;
+    color4 diffuse_product = light_diffuse * material_diffuse;
+    color4 specular_product = light_specular * material_specular;
+
+    glUniform4fv( glGetUniformLocation(program, "AmbientProduct"),
+		  1, ambient_product );
+    glUniform4fv( glGetUniformLocation(program, "DiffuseProduct"),
+		  1, diffuse_product );
+    glUniform4fv( glGetUniformLocation(program, "SpecularProduct"),
+		  1, specular_product );
+	
+    glUniform4fv( glGetUniformLocation(program, "LightPosition"),
+		  1, light_position );
+
+    glUniform1f( glGetUniformLocation(program, "Shininess"),
+		 material_shininess );
+		 
+    // Retrieve transformation uniform variable locations
+    ModelView = glGetUniformLocation( program, "ModelView" );
+    Projection = glGetUniformLocation( program, "Projection" );
 
     glEnable( GL_DEPTH_TEST );
+
+    glShadeModel(GL_FLAT);
     glClearColor( .1, .1, .1, 1.0 ); 
 }
 

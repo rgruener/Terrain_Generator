@@ -14,8 +14,8 @@ Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float r
     this->roughness_constant = roughness_constant;
     this->range = range;
     this->method = method;
-    this->points.resize(pow(this->side_size,2)*4);
-    this->colors.resize(pow(this->side_size,2)*4);
+    this->points.resize(pow(this->side_size,2)*10);
+    this->colors.resize(pow(this->side_size,2)*10);
     this->terrain.resize(this->side_size);
     for (int i=0; i < side_size; i++){
         terrain[i].resize(side_size,init_height);
@@ -39,7 +39,7 @@ void Terrain::generateHeightMap(){
     int high_index_i, high_index_j, midpoint_index_i, midpoint_index_j, odd_line;
     float new_midpoint;
     float ratio = powf(2.0,-this->roughness_constant);
-    float cur_range = this->range * ratio;
+    float cur_range = this->range;
     cout << "New range: " << cur_range << endl;
     float rand_f;
     while (stride > 0){
@@ -77,9 +77,7 @@ void Terrain::generateHeightMap(){
             }
         }
         cur_range *= ratio;
-        cout << "New range: " << cur_range << endl;
         stride /= 2;
-        cout << "New stride: " << stride << endl;
     } 
 }
 
@@ -97,7 +95,7 @@ float Terrain::avgDiamondHeight(int i, int j, int stride){
         return (this->terrain[this->side_size-1-stride][j] + 
                     this->terrain[i+stride][j] + this->terrain[i][j-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
-    } else if (i = this->side_size-1){
+    } else if (i == this->side_size-1){
         return (this->terrain[i-stride][j] + this->terrain[stride][j] +
                     this->terrain[i][j-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
@@ -105,7 +103,7 @@ float Terrain::avgDiamondHeight(int i, int j, int stride){
         return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + 
                     this->terrain[i][this->side_size-1-stride] + 
                     this->terrain[i][j+stride]) / 4.0f;
-    } else if (j = this->side_size-1){
+    } else if (j == this->side_size-1){
         return (this->terrain[i-stride][j] + this->terrain[i+stride][j] + 
                     this->terrain[i][j-stride] + 
                     this->terrain[i][stride]) / 4.0f;
@@ -171,7 +169,7 @@ void Terrain::storePointsTriangles(){
             point4 p4 = point4(NORMALIZE(i+1-center_factor,center_factor),
                                 NORMALIZE(j-center_factor,center_factor),
                                 terrain[i+1][j],1.0);
-            color4 c = color4(1.0, 1.0, 1.0, 1.0);
+            color4 c = color4(.5f, .35f, .05f, 1.0); // Brown
 
             addTriangle(p1, p2, p3, c);
             addTriangle(p1, p3, p4, c);
