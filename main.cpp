@@ -17,6 +17,7 @@ point4 *points;
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int      Axis = Xaxis;
 GLfloat  Theta[NumAxes] = { 0.0, 0.0, 0.0 };
+GLfloat scale = 1.0;
 
 GLuint  model_view;  // The location of the "model_view" shader uniform variable
 GLuint buffer;
@@ -24,6 +25,7 @@ GLuint buffer;
 double camera_angle_h = 0;
 double camera_angle_v = 0;
 
+int numVertices;
 int drag_x_origin;
 int drag_y_origin;
 int dragging = 0;
@@ -32,14 +34,15 @@ int dragging = 0;
 
 // OpenGL initialization
 void init(){
-    terrain = new Terrain(2);
+
+    terrain = new Terrain(10, 0.7, 1);
 
     points = terrain->getPoints();
     colors = terrain->getColors();
 
-    int num_points = terrain->getNumPoints();
+    numVertices = terrain->getNumPoints();
+    //terrain->dumpHeightMap();
 
-    cout << " here " << endl;
     // Create a vertex array object
     GLuint vao;
     glGenVertexArrays( 1, &vao );
@@ -48,12 +51,11 @@ void init(){
     // Create and initialize a buffer object
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
-    cout << "in init after terrain generated" << endl;
 
-    glBufferData( GL_ARRAY_BUFFER, num_points*(sizeof(point4) + sizeof(color4)),
+    glBufferData( GL_ARRAY_BUFFER, numVertices*(sizeof(point4) + sizeof(color4)),
 		  NULL, GL_STREAM_DRAW );
-    glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(point4)*num_points, points );
-    glBufferSubData( GL_ARRAY_BUFFER, sizeof(point4)*num_points, sizeof(color4)*num_points, colors );
+    glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(point4)*numVertices, points );
+    glBufferSubData( GL_ARRAY_BUFFER, sizeof(point4)*numVertices, sizeof(color4)*numVertices, colors );
 
     //Load shaders and use the resulting shader program
     GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
@@ -68,7 +70,7 @@ void init(){
     GLuint vColor = glGetAttribLocation( program, "vColor" ); 
     glEnableVertexAttribArray( vColor );
     glVertexAttribPointer( vColor, 4, GL_FLOAT, GL_FALSE, 0,
-               BUFFER_OFFSET(sizeof(point4)*num_points) );
+               BUFFER_OFFSET(sizeof(point4)*numVertices) );
 
 
     model_view = glGetUniformLocation( program, "model_view" );
@@ -80,25 +82,14 @@ void init(){
 //----------------------------------------------------------------------------
 
 void display( void ){
-    cout << "in display" << endl;
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
-    //mat4 mv = RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
-    //mat4 rot;
+    mat4 mv = Scale(scale, scale, scale) * RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
+    mat4 rot;
 
-    //glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
+    glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
 
-    //int num_points = terrain->getNumPoints();
-    
-    //points = terrain->getPoints();
-    //colors = terrain->getColors();
-
-    //cout << "num points: " << num_points << endl;
-
-    //glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(point4)*num_points, points );
-    //glBufferSubData( GL_ARRAY_BUFFER, sizeof(point4)*num_points, sizeof(color4)*num_points, colors );
-
-    //glDrawArrays( GL_LINES, 0, num_points );
+    glDrawArrays( GL_LINES, 0, numVertices );
 
     glutSwapBuffers();
 }
@@ -117,6 +108,7 @@ void keyboard( unsigned char key, int x, int y ){
 
 void special_keyboard( int key, int x, int y ){
     int angle_factor = 4;
+    float scale_factor = .01;
     switch( key ) {
         case GLUT_KEY_LEFT:
             Theta[Yaxis] += angle_factor;
@@ -125,10 +117,10 @@ void special_keyboard( int key, int x, int y ){
             Theta[Yaxis] -= angle_factor;
             break;
         case GLUT_KEY_UP:
-            Theta[Xaxis] += angle_factor;
+            scale += scale_factor;
             break;
         case GLUT_KEY_DOWN:
-            Theta[Xaxis] -= angle_factor;
+            scale -= scale_factor;
             break;
     }
     if (Theta[Xaxis] > 360.0)

@@ -32,7 +32,9 @@ class Terrain {
         void generateHeightMap();
         float avgSquareHeight(int i, int j, int size);
         float avgDiamondHeight(int i, int j, int stride);
-        void storePoints();
+        void storePointsLines();
+        void storePointsTriangles();
+        void addTriangle();
 
     public:
         Terrain(int terrain_order = 8, float roughness_constant = 0.7f, 
@@ -41,6 +43,7 @@ class Terrain {
         point4 *getPoints();
         color4 *getColors();
         int getNumPoints();
+        void dumpHeightMap();
 };
 
 #endif
