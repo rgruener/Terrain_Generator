@@ -5,15 +5,15 @@
 #include "terrain.h"
 #include <iostream>
 
-#define RAND_NUM(num_range) 0
-//#define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
+#define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
 #define NORMALIZE(point,factor) ((float)(point)/(float)(factor*1.3f))
 
-Terrain::Terrain(int terrain_order /*= 8 */, float roughness_constant /* = 0.7f */, 
+Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float roughness_constant /* = 0.7f */, 
                     float range /* = 1.0f */, float init_height /* = 0f */){
     this->side_size = pow(2,terrain_order) + 1;
     this->roughness_constant = roughness_constant;
     this->range = range;
+    this->method = method;
     this->points.resize(pow(this->side_size,2)*4);
     this->colors.resize(pow(this->side_size,2)*4);
     this->terrain.resize(this->side_size);
@@ -22,7 +22,14 @@ Terrain::Terrain(int terrain_order /*= 8 */, float roughness_constant /* = 0.7f 
     }
     srand(time(NULL));
     generateHeightMap();
-    storePointsLines();
+    switch (this->method){
+        case TRIANGLES:
+            storePointsTriangles();
+            break;
+        case LINES:
+            storePointsLines();
+            break;
+    }
 }
 
 
@@ -31,32 +38,48 @@ void Terrain::generateHeightMap(){
     int stride = (this->side_size-1) / 2;
     int high_index_i, high_index_j, midpoint_index_i, midpoint_index_j, odd_line;
     float new_midpoint;
-    float cur_range = this->range;
+    float ratio = powf(2.0,-this->roughness_constant);
+    float cur_range = this->range * ratio;
+    cout << "New range: " << cur_range << endl;
+    float rand_f;
     while (stride > 0){
 
         // Perform the diamond step
         for (i=0; i < this->side_size-1; i+=stride*2){
             for (j=0; j < this->side_size-1; j+=stride*2){
+                rand_f = RAND_NUM(cur_range);
+                //cout << "Compute Diamond Step, set " << i+stride << ", " << j+stride << ", " << rand_f << endl;
                 terrain[i+stride][j+stride] = avgSquareHeight(i,j,stride*2) + 
-                                                RAND_NUM(cur_range);
-                cout << "DIAMOND: " << terrain[i+stride][j+stride] << endl;
+                                                rand_f;
             }
         }
 
         // Perform the square step
         odd_line = 0;
         for (i=0; i < this->side_size-1; i+=stride){
-            odd_line = (odd_line % 2);
+            odd_line = (odd_line == 0);
             for (j=0; j < this->side_size-1; j+=stride){
                 if ((odd_line) && !j){
                     j += stride;
                 }
-                terrain[i][j] = avgDiamondHeight(i,j,stride) + RAND_NUM(cur_range);
-                cout << "SQUARE: " << terrain[i][j] << endl;
+                rand_f = RAND_NUM(cur_range);
+                //cout << "Compute Square Step, set " << i << ", " << j << ", " << rand_f << endl;
+                terrain[i][j] = avgDiamondHeight(i,j,stride) + rand_f;
+
+                // Enable wrapping by copying over edges
+                if (i == 0){
+                    terrain[this->side_size-1][j] = terrain[i][j];
+                }
+                if (j == 0){
+                    terrain[i][this->side_size-1] = terrain[i][j];
+                }
+                j += stride;
             }
         }
-        cur_range *= powf(2.0,-this->roughness_constant);
+        cur_range *= ratio;
+        cout << "New range: " << cur_range << endl;
         stride /= 2;
+        cout << "New stride: " << stride << endl;
     } 
 }
 
@@ -103,10 +126,10 @@ void Terrain::storePointsLines(){
             // Y Line
             points[k] = point4(NORMALIZE(i-center_factor,center_factor),
                                 NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-            colors[k++] = color4(1.0, 0.0, 1.0, 1.0); // White
+            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
             points[k] = point4(NORMALIZE(i-center_factor,center_factor),
                                 NORMALIZE(j+1-center_factor,center_factor),terrain[i][j+1],1.0);
-            colors[k++] = color4(1.0, 0.0, 1.0, 1.0); // White
+            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
             // X Line
             if (i < this->side_size-1){
                 points[k] = point4(NORMALIZE(i-center_factor,center_factor),
@@ -121,10 +144,10 @@ void Terrain::storePointsLines(){
         if (i < this->side_size-1){
             points[k] = point4(NORMALIZE(i-center_factor,center_factor),
                                 NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 0.0, 1.0); // White
+            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
             points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),
                                 NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 0.0, 1.0); // White
+            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
         }
     }
     this->num_points = k;
@@ -134,30 +157,26 @@ void Terrain::storePointsTriangles(){
     int i,j,k=0;
     float init_scale_factor = 0.5;
     int center_factor = (this->side_size-1)/2;
-    for (i=0; i<this->side_size; i++){
+    for (i=0; i<this->side_size-1; i++){
         for (j=0; j<this->side_size-1; j++){
-            // Y Line
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j+1-center_factor,center_factor),terrain[i][j+1],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            // X Line
-            if (i < this->side_size-1){
-                points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-                colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-                points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
-                colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            }
-        }
-        // Final X Line
-        if (i < this->side_size-1){
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
-            colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
+            point4 p1 = point4(NORMALIZE(i-center_factor,center_factor),
+                                NORMALIZE(j-center_factor,center_factor),
+                                terrain[i][j],1.0);
+            point4 p2 = point4(NORMALIZE(i-center_factor,center_factor),
+                                NORMALIZE(j+1-center_factor,center_factor),
+                                terrain[i][j+1],1.0);
+            point4 p3 = point4(NORMALIZE(i+1-center_factor,center_factor),
+                                NORMALIZE(j+1-center_factor,center_factor),
+                                terrain[i+1][j+1],1.0);
+            point4 p4 = point4(NORMALIZE(i+1-center_factor,center_factor),
+                                NORMALIZE(j-center_factor,center_factor),
+                                terrain[i+1][j],1.0);
+            color4 c = color4(1.0, 1.0, 1.0, 1.0);
+
+            addTriangle(p1, p2, p3, c);
+            addTriangle(p1, p3, p4, c);
         }
     }
-    this->num_points = k;
 }
 
 void Terrain::dumpHeightMap(){
@@ -166,10 +185,19 @@ void Terrain::dumpHeightMap(){
     int center_factor = (this->side_size-1)/2;
     for (j=0; j<this->side_size; j++){
         for (i=0; i<this->side_size; i++){
-            cout << i << ", " << j << ": " << terrain[i][j] << "\t\t";
+            cout << i << ", " << j << ": " << terrain[i][j] << "\t\t\t";
         }
         cout << endl;
     }
+}
+
+void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 color){
+    points[this->num_points] = p1;
+    colors[this->num_points++] = color;
+    points[this->num_points] = p2;
+    colors[this->num_points++] = color;
+    points[this->num_points] = p3;
+    colors[this->num_points++] = color;
 }
 
 point4 *Terrain::getPoints(){

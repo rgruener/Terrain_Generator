@@ -17,6 +17,8 @@ using namespace std;
 typedef Angel::vec4 color4;
 typedef Angel::vec4 point4;
 
+enum { TRIANGLES = 0, LINES = 1};
+
 class Terrain {
 
     private:
@@ -28,16 +30,17 @@ class Terrain {
         float roughness_constant;
         float range;
         int num_points;
+        int method;
         
         void generateHeightMap();
         float avgSquareHeight(int i, int j, int size);
         float avgDiamondHeight(int i, int j, int stride);
         void storePointsLines();
         void storePointsTriangles();
-        void addTriangle();
+        void addTriangle(point4 p1, point4 p2, point4 p3, color4 color);
 
     public:
-        Terrain(int terrain_order = 8, float roughness_constant = 0.7f, 
+        Terrain(int method = TRIANGLES, int terrain_order = 8, float roughness_constant = 0.7f, 
                     float range = 1.0f, float init_height = 0.0f);
 
         point4 *getPoints();

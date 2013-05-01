@@ -4,6 +4,8 @@
 
 #include "Angel.h"
 #include "terrain.h"
+#include <unistd.h>
+#include <cstdlib>
 
 using namespace std;
 
@@ -18,6 +20,13 @@ enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int      Axis = Xaxis;
 GLfloat  Theta[NumAxes] = { 0.0, 0.0, 0.0 };
 GLfloat scale = 1.0;
+
+// Array for command line arguments
+int method = TRIANGLES;
+int terrain_order = 8;
+float roughness_constant = 0.7;
+float range = 1.0;
+float init_height = 1.0;
 
 GLuint  model_view;  // The location of the "model_view" shader uniform variable
 GLuint buffer;
@@ -35,13 +44,13 @@ int dragging = 0;
 // OpenGL initialization
 void init(){
 
-    terrain = new Terrain(3, 0.7, 1);
+    terrain = new Terrain(method, terrain_order, roughness_constant, range, init_height);
 
     points = terrain->getPoints();
     colors = terrain->getColors();
 
     numVertices = terrain->getNumPoints();
-    terrain->dumpHeightMap();
+    //terrain->dumpHeightMap();
 
     // Create a vertex array object
     GLuint vao;
@@ -89,7 +98,14 @@ void display( void ){
 
     glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
 
-    glDrawArrays( GL_LINES, 0, numVertices );
+    switch(method){
+        case TRIANGLES:
+            glDrawArrays( GL_TRIANGLES, 0, numVertices );
+            break;
+        case LINES:
+            glDrawArrays( GL_LINES, 0, numVertices );
+            break;
+    }
 
     glutSwapBuffers();
 }
@@ -160,7 +176,39 @@ void mouse_move(int x, int y){
 
 //----------------------------------------------------------------------------
 
+void parseCommandLineArguments(int argc, char** argv){
+    int c;
+
+    while ((c=getopt(argc, argv, "lto:h:r:i:")) != -1){
+        switch(c){
+            case 'l':
+                method = LINES;
+                break;
+            case 't':
+                method = TRIANGLES;
+                break;
+            case 'o':
+                terrain_order = atoi(optarg);
+                break;
+            case 'h':
+                roughness_constant = atof(optarg);
+                break;
+            case 'r':
+                range = atof(optarg);
+                break;
+            case 'i':
+                init_height = atof(optarg);
+                break;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------
+
+
 int main( int argc, char **argv ){
+
+    parseCommandLineArguments(argc, argv);
 
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
