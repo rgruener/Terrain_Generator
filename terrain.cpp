@@ -7,6 +7,7 @@
 
 #define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
 #define NORMALIZE(point,factor) ((float)(point)/(float)(factor*1.3f))
+#define POSITIVE(num) (num = num > 0.0 ? num : 0)
 
 Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float roughness_constant /* = 0.7f */, 
                     float range /* = 1.0f */, float init_height /* = 0f */){
@@ -14,9 +15,9 @@ Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float r
     this->roughness_constant = roughness_constant;
     this->range = range;
     this->method = method;
-    this->points.resize(pow(this->side_size,2)*4);
-    this->colors.resize(pow(this->side_size,2)*4);
-    this->normals.resize(pow(this->side_size,2)*4);
+    this->points.resize(pow(this->side_size*4,2));
+    this->colors.resize(pow(this->side_size*4,2));
+    this->normals.resize(pow(this->side_size*4,2));
     this->terrain.resize(this->side_size);
     for (int i=0; i < side_size; i++){
         terrain[i].resize(side_size,init_height);
@@ -41,15 +42,13 @@ void Terrain::generateHeightMap(){
     float new_midpoint;
     float ratio = powf(2.0,-this->roughness_constant);
     float cur_range = this->range;
-    cout << "New range: " << cur_range << endl;
-    float rand_f;
+    float rand_f, new_height;
     while (stride > 0){
 
         // Perform the diamond step
         for (i=0; i < this->side_size-1; i+=stride*2){
             for (j=0; j < this->side_size-1; j+=stride*2){
                 rand_f = RAND_NUM(cur_range);
-                //cout << "Compute Diamond Step, set " << i+stride << ", " << j+stride << ", " << rand_f << endl;
                 terrain[i+stride][j+stride] = avgSquareHeight(i,j,stride*2) + 
                                                 rand_f;
             }
@@ -64,7 +63,6 @@ void Terrain::generateHeightMap(){
                     j += stride;
                 }
                 rand_f = RAND_NUM(cur_range);
-                //cout << "Compute Square Step, set " << i << ", " << j << ", " << rand_f << endl;
                 terrain[i][j] = avgDiamondHeight(i,j,stride) + rand_f;
 
                 // Enable wrapping by copying over edges
@@ -170,10 +168,13 @@ void Terrain::storePointsTriangles(){
             point4 p4 = point4(NORMALIZE(i+1-center_factor,center_factor),
                                 NORMALIZE(j-center_factor,center_factor),
                                 terrain[i+1][j],1.0);
-            color4 c = color4(.5f, .35f, .05f, 1.0); // Brown
+            color4 high = color4(.95f, .95f, .95f, 1.0); // White
+            color4 mid = color4(.05f, .75f, .45f, 1.0); // Green
+            color4 low = color4(.05f, .05f, .95f, 1.0); // Blue
+            color4 brown = color4(0.5f, 0.35f, 0.05f, 1.0); // Brown
 
-            addTriangle(p1, p2, p3, c);
-            addTriangle(p1, p3, p4, c);
+            addTriangle(p1, p2, p3, high, mid, low, brown);
+            addTriangle(p1, p3, p4, high, mid, low, brown);
         }
     }
 }
@@ -190,20 +191,47 @@ void Terrain::dumpHeightMap(){
     }
 }
 
-void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 color){
-    vec4 u = p2 - p1;
-    vec4 v = p3 - p1;
+void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 mid, color4 low, color4 brown){
+    point4 p1_new = point4(p1.x, p1.y, POSITIVE(p1.z), p1.w);
+    point4 p2_new = point4(p2.x, p2.y, POSITIVE(p2.z), p2.w);
+    point4 p3_new = point4(p3.x, p3.y, POSITIVE(p3.z), p3.w);
+    vec4 u = p2_new - p1_new;
+    vec4 v = p3_new - p1_new;
     vec3 normal = normalize( cross(u, v) );
 
-    points[this->num_points] = p1;
+    points[this->num_points] = p1_new;
     normals[this->num_points] = normal;
-    colors[this->num_points++] = color;
-    points[this->num_points] = p2;
+    if (p1.z == 0){
+        colors[this->num_points++] = low;
+    } else if (p1.z < 0.5){
+        colors[this->num_points++] = mid;
+    } else if (p1.z < 0.75){
+        colors[this->num_points++] = brown;
+    } else {
+        colors[this->num_points++] = high;
+    }
+    points[this->num_points] = p2_new;
     normals[this->num_points] = normal;
-    colors[this->num_points++] = color;
-    points[this->num_points] = p3;
+    if (p2.z == 0){
+        colors[this->num_points++] = low;
+    } else if (p2.z < 0.5){
+        colors[this->num_points++] = mid;
+    } else if (p3.z < 0.75){
+        colors[this->num_points++] = brown;
+    } else {
+        colors[this->num_points++] = high;
+    }
+    points[this->num_points] = p3_new;
     normals[this->num_points] = normal;
-    colors[this->num_points++] = color;
+    if (p3.z == 0){
+        colors[this->num_points++] = low;
+    } else if (p3.z < 0.5){
+        colors[this->num_points++] = mid;
+    } else if (p3.z < 0.75){
+        colors[this->num_points++] = brown;
+    } else {
+        colors[this->num_points++] = high;
+    }
 }
 
 point4 *Terrain::getPoints(){

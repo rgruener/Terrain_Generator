@@ -2,8 +2,8 @@
 
 
 in vec4 vPosition;
-in vec3 vNormal;
 in vec4 vColor;
+in vec3 vNormal;
 out vec4 color;
 
 uniform vec4 AmbientProduct, DiffuseProduct, SpecularProduct;
@@ -38,7 +38,7 @@ void main()
 
     gl_Position = ModelView * vPosition;
 
-    //color = ambient + diffuse + specular;
-    //color.w = 1.0;
-    color = vColor;
+    color = (ambient + diffuse + specular)*vColor;
+    color.w = 1.0;
+    //color = vColor;
 }

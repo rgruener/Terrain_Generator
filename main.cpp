@@ -60,15 +60,16 @@ void init(){
     GLuint vao;
     glGenVertexArrays( 1, &vao );
     glBindVertexArray( vao );
-
+    
     // Create and initialize a buffer object
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
 
-    glBufferData( GL_ARRAY_BUFFER, numVertices*(sizeof(point4) + sizeof(color4)),
-		  NULL, GL_STREAM_DRAW );
+    glBufferData( GL_ARRAY_BUFFER, numVertices*(sizeof(point4) + sizeof(color4) + sizeof(vec3)),
+          NULL, GL_STREAM_DRAW );
     glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof(point4)*numVertices, points );
     glBufferSubData( GL_ARRAY_BUFFER, sizeof(point4)*numVertices, sizeof(color4)*numVertices, colors );
+    glBufferSubData( GL_ARRAY_BUFFER, (sizeof(color4)+sizeof(point4))*numVertices, sizeof(vec3)*numVertices, normals );
 
     //Load shaders and use the resulting shader program
     GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
@@ -91,15 +92,15 @@ void init(){
                BUFFER_OFFSET((sizeof(point4)+sizeof(color4))*numVertices) );
 
     // Initialize shader lighting parameters
-    point4 light_position( 0.0, 0.0, -1.0, 0.0 );
-    color4 light_ambient( 0.2, 0.2, 0.2, 1.0 );
+    point4 light_position( 0.2, 0.2, -1.0, 0.0 );
+    color4 light_ambient( 0.5, 0.5, 0.5, 1.0 );
     color4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
     color4 light_specular( 1.0, 1.0, 1.0, 1.0 );
 
-    color4 material_ambient( 1.0, 0.0, 1.0, 1.0 );
-    color4 material_diffuse( 1.0, 0.8, 0.0, 1.0 );
-    color4 material_specular( 1.0, 0.8, 0.0, 1.0 );
-    float  material_shininess = 100.0;
+    color4 material_ambient( 1.0, 1.0, 1.0, 1.0 );
+    color4 material_diffuse( 1.0, 0.8, 0.8, 1.0 );
+    color4 material_specular( 1.0, 0.8, 0.8, 1.0 );
+    float  material_shininess = 20.0;
 
     color4 ambient_product = light_ambient * material_ambient;
     color4 diffuse_product = light_diffuse * material_diffuse;
@@ -124,7 +125,7 @@ void init(){
 
     glEnable( GL_DEPTH_TEST );
 
-    glShadeModel(GL_FLAT);
+    glShadeModel(GL_SMOOTH);
     glClearColor( .1, .1, .1, 1.0 ); 
 }
 

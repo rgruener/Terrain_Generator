@@ -38,7 +38,7 @@ class Terrain {
         float avgDiamondHeight(int i, int j, int stride);
         void storePointsLines();
         void storePointsTriangles();
-        void addTriangle(point4 p1, point4 p2, point4 p3, color4 color);
+        void addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 mid, color4 low, color4 brown);
 
     public:
         Terrain(int method = TRIANGLES, int terrain_order = 8, float roughness_constant = 0.7f, 
