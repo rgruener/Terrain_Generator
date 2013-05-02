@@ -1,8 +1,9 @@
 #version 150 
 
 
-in  vec4 vPosition;
-in  vec3 vNormal;
+in vec4 vPosition;
+in vec3 vNormal;
+in vec4 vColor;
 out vec4 color;
 
 uniform vec4 AmbientProduct, DiffuseProduct, SpecularProduct;
@@ -14,7 +15,7 @@ void main()
 {
     // Transform vertex  position into eye coordinates
     vec3 pos = (ModelView * vPosition).xyz;
-	
+    
     vec3 L = normalize( LightPosition.xyz - pos );
     vec3 E = normalize( -pos );
     vec3 H = normalize( L + E );
@@ -32,24 +33,12 @@ void main()
     vec4  specular = Ks * SpecularProduct;
     
     if( dot(L, N) < 0.0 ) {
-	specular = vec4(0.0, 0.0, 0.0, 1.0);
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
     } 
 
-    gl_Position = Projection * ModelView * vPosition;
+    gl_Position = ModelView * vPosition;
 
-    color = ambient + diffuse + specular;
-    color.w = 1.0;
-}
-#version 150
-
-in  vec4 vPosition;
-in  vec4 vColor;
-out vec4 color;
-
-uniform mat4 model_view;
-
-void main() 
-{
+    //color = ambient + diffuse + specular;
+    //color.w = 1.0;
     color = vColor;
-    gl_Position = model_view * vPosition;
-} 
+}

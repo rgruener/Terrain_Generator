@@ -24,6 +24,7 @@ class Terrain {
     private:
         vector<point4> points;
         vector<color4> colors;
+        vector<vec3> normals;
 
         vector<vector <float>  > terrain;
         int side_size;
@@ -45,6 +46,7 @@ class Terrain {
 
         point4 *getPoints();
         color4 *getColors();
+        vec3 *getNormals();
         int getNumPoints();
         void dumpHeightMap();
 };

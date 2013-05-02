@@ -13,6 +13,7 @@ Terrain *terrain;
 
 color4 *colors;
 point4 *points;
+vec3 *normals;
 
 
 // Array of rotation angles (in degrees) for each coordinate axis
@@ -20,6 +21,7 @@ enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int      Axis = Xaxis;
 GLfloat  Theta[NumAxes] = { 0.0, 0.0, 0.0 };
 GLfloat scale = 1.0;
+GLfloat translate[NumAxes] = {0.0, 0.0, 0.0};
 
 // Array for command line arguments
 int method = TRIANGLES;
@@ -28,7 +30,8 @@ float roughness_constant = 0.7;
 float range = 0.8;
 float init_height = 0.0;
 
-GLuint  model_view;  // The location of the "model_view" shader uniform variable
+// Model-view and projection matrices uniform location
+GLuint  ModelView, Projection;
 GLuint buffer;
 
 double camera_angle_h = 0;
@@ -48,6 +51,7 @@ void init(){
 
     points = terrain->getPoints();
     colors = terrain->getColors();
+    normals = terrain->getNormals();
 
     numVertices = terrain->getNumPoints();
     //terrain->dumpHeightMap();
@@ -80,6 +84,11 @@ void init(){
     glEnableVertexAttribArray( vColor );
     glVertexAttribPointer( vColor, 4, GL_FLOAT, GL_FALSE, 0,
                BUFFER_OFFSET(sizeof(point4)*numVertices) );
+
+    GLuint vNormal = glGetAttribLocation( program, "vNormal" ); 
+    glEnableVertexAttribArray( vNormal );
+    glVertexAttribPointer( vNormal, 3, GL_FLOAT, GL_FALSE, 0,
+               BUFFER_OFFSET((sizeof(point4)+sizeof(color4))*numVertices) );
 
     // Initialize shader lighting parameters
     point4 light_position( 0.0, 0.0, -1.0, 0.0 );
@@ -124,10 +133,10 @@ void init(){
 void display( void ){
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
-    mat4 mv = Scale(scale, scale, scale) * RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
+    mat4 mv = Translate(-translate[Xaxis],0,0) * Scale(scale,scale,scale) * RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
     mat4 rot;
 
-    glUniformMatrix4fv( model_view, 1, GL_TRUE, mv );
+    glUniformMatrix4fv( ModelView, 1, GL_TRUE, mv );
 
     switch(method){
         case TRIANGLES:
@@ -139,6 +148,17 @@ void display( void ){
     }
 
     glutSwapBuffers();
+}
+
+//----------------------------------------------------------------------------
+
+void reshape( int width, int height ){
+    glViewport( 0, 0, width, height );
+
+    GLfloat aspect = GLfloat(width)/height;
+    mat4  projection = Perspective( 45.0, aspect, 0.5, 3.0 );
+
+    glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
 }
 
 //----------------------------------------------------------------------------
@@ -158,16 +178,20 @@ void special_keyboard( int key, int x, int y ){
     float scale_factor = .01;
     switch( key ) {
         case GLUT_KEY_LEFT:
-            Theta[Yaxis] += angle_factor;
+            //Theta[Yaxis] += angle_factor;
+            translate[Xaxis] -= scale_factor;
             break;
         case GLUT_KEY_RIGHT:
-            Theta[Yaxis] -= angle_factor;
+            //Theta[Yaxis] -= angle_factor;
+            translate[Xaxis] += scale_factor;
             break;
         case GLUT_KEY_UP:
             scale += scale_factor;
+            translate[Yaxis] += scale_factor;
             break;
         case GLUT_KEY_DOWN:
             scale -= scale_factor;
+            translate[Yaxis] -= scale_factor;
             break;
     }
     if (Theta[Xaxis] > 360.0)
@@ -251,6 +275,7 @@ int main( int argc, char **argv ){
     init();
 
     glutDisplayFunc( display );
+    glutReshapeFunc( reshape );
     glutKeyboardFunc( keyboard );
     glutSpecialFunc( special_keyboard );
     glutMouseFunc( mouse );
