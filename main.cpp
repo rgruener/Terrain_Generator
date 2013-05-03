@@ -6,6 +6,7 @@
 #include "terrain.h"
 #include <unistd.h>
 #include <cstdlib>
+#include <cmath>
 
 using namespace std;
 
@@ -41,6 +42,7 @@ int numVertices;
 int drag_x_origin;
 int drag_y_origin;
 int dragging = 0;
+int scaling = 0;
 
 //----------------------------------------------------------------------------
 
@@ -134,7 +136,7 @@ void init(){
 void display( void ){
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
-    mat4 mv = Translate(-translate[Xaxis],0,0) * Scale(scale,scale,scale) * RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
+    mat4 mv = Translate(-translate[Xaxis],0,-translate[Yaxis]) * Scale(scale,scale,scale) * RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
     mat4 rot;
 
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, mv );
@@ -157,19 +159,36 @@ void reshape( int width, int height ){
     glViewport( 0, 0, width, height );
 
     GLfloat aspect = GLfloat(width)/height;
-    mat4  projection = Perspective( 45.0, aspect, 0, 3.0 );
+    GLfloat center_factor = (terrain->getSideSize()-1.0f) / 2.0f;
+    mat4  projection = Ortho(-center_factor,center_factor,-center_factor,center_factor,sqrt(terrain->getSideSize()-1)*2,0.0f);
+    //projection = Perspective(45.0,aspect,(center_factor+1)*10,0.f);
+    //projection = mat4(1.0f);
 
-    glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
+    glUniformMatrix4fv( Projection, 1, GL_TRUE, projection);
 }
 
 //----------------------------------------------------------------------------
 
 void keyboard( unsigned char key, int x, int y ){
+    float translate_factor = .1;
     switch( key ) {
+        case 'w':
+            translate[Yaxis] += translate_factor;
+            break;
+        case 's':
+            translate[Yaxis] -= translate_factor;
+            break;
+        case 'a':
+            translate[Xaxis] -= translate_factor;
+            break;
+        case 'd':
+            translate[Xaxis] += translate_factor;
+            break;
         case 033:  // Escape key
             exit( EXIT_SUCCESS );
             break;
     }
+    glutPostRedisplay();
 }
 
 //----------------------------------------------------------------------------
@@ -187,11 +206,11 @@ void special_keyboard( int key, int x, int y ){
             translate[Xaxis] += scale_factor;
             break;
         case GLUT_KEY_UP:
-            scale += scale_factor;
+            //scale += scale_factor;
             translate[Yaxis] += scale_factor;
             break;
         case GLUT_KEY_DOWN:
-            scale -= scale_factor;
+            //scale -= scale_factor;
             translate[Yaxis] -= scale_factor;
             break;
     }
@@ -215,6 +234,15 @@ void mouse( int button, int state, int x, int y ){
             else
                 dragging = 0;
             break;
+        case GLUT_RIGHT_BUTTON:
+            if(state == GLUT_DOWN) {
+                scaling = 1;
+                drag_x_origin = x;
+                drag_y_origin = y;
+            }
+            else
+                scaling = 0;
+            break;
     }
 }
 
@@ -222,12 +250,29 @@ void mouse( int button, int state, int x, int y ){
 
 void mouse_move(int x, int y){
     if(dragging) {
-        Theta[Xaxis] += (y - drag_y_origin)*0.3;
-        Theta[Yaxis] += (x - drag_x_origin)*0.3;
+        Theta[Xaxis] += (y - drag_y_origin)*0.2;
+        Theta[Yaxis] += (x - drag_x_origin)*0.2;
+        drag_x_origin = x;
+        drag_y_origin = y;
+        glutPostRedisplay();
+    } else if (scaling){
+        scale += (y - drag_y_origin)*0.0005;
         drag_x_origin = x;
         drag_y_origin = y;
         glutPostRedisplay();
     }
+}
+
+//----------------------------------------------------------------------------
+
+void mouse_wheel(int button, int dir, int x, int y){
+    float scale_factor = .01;
+    if (dir > 0){
+        scale += scale_factor;
+    } else {
+        scale -= scale_factor;
+    }
+    glutPostRedisplay();
 }
 
 //----------------------------------------------------------------------------
@@ -280,7 +325,8 @@ int main( int argc, char **argv ){
     glutKeyboardFunc( keyboard );
     glutSpecialFunc( special_keyboard );
     glutMouseFunc( mouse );
-    glutMotionFunc( mouse_move);
+    glutMotionFunc( mouse_move );
+    glutMouseWheelFunc( mouse_wheel );
     //glutIdleFunc( idle );
 
     glutMainLoop();

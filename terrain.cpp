@@ -4,6 +4,7 @@
 
 #include "terrain.h"
 #include <iostream>
+#include <cmath>
 
 #define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
 #define NORMALIZE(point,factor) ((float)(point)/(float)(factor*1.3f))
@@ -11,10 +12,11 @@
 
 Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float roughness_constant /* = 0.7f */, 
                     float range /* = 1.0f */, float init_height /* = 0f */){
+    float height_factor = terrain_order;
     this->side_size = pow(2,terrain_order) + 1;
     this->roughness_constant = roughness_constant;
-    this->range = range;
     this->method = method;
+    this->range = range * terrain_order * height_factor;
     this->points.resize(pow(this->side_size*4,2));
     this->colors.resize(pow(this->side_size*4,2));
     this->normals.resize(pow(this->side_size*4,2));
@@ -121,29 +123,23 @@ void Terrain::storePointsLines(){
     for (i=0; i<this->side_size; i++){
         for (j=0; j<this->side_size-1; j++){
             // Y Line
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),
-                                NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
+            points[k] = point4(i-center_factor,j-center_factor,terrain[i][j],1.0);
             colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),
-                                NORMALIZE(j+1-center_factor,center_factor),terrain[i][j+1],1.0);
+            points[k] = point4(i-center_factor,j+1-center_factor,terrain[i][j+1],1.0);
             colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
             // X Line
             if (i < this->side_size-1){
-                points[k] = point4(NORMALIZE(i-center_factor,center_factor),
-                                    NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
+                points[k] = point4(i-center_factor,j-center_factor,terrain[i][j],1.0);
                 colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-                points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),
-                                    NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
+                points[k] = point4(i+1-center_factor,j-center_factor,terrain[i+1][j],1.0);
                 colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
             }
         }
         // Final X Line
         if (i < this->side_size-1){
-            points[k] = point4(NORMALIZE(i-center_factor,center_factor),
-                                NORMALIZE(j-center_factor,center_factor),terrain[i][j],1.0);
+            points[k] = point4((i-center_factor),j-center_factor,terrain[i][j],1.0);
             colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
-            points[k] = point4(NORMALIZE(i+1-center_factor,center_factor),
-                                NORMALIZE(j-center_factor,center_factor),terrain[i+1][j],1.0);
+            points[k] = point4(i+1-center_factor,(j-center_factor),terrain[i+1][j],1.0);
             colors[k++] = color4(1.0, 1.0, 1.0, 1.0); // White
         }
     }
@@ -156,18 +152,10 @@ void Terrain::storePointsTriangles(){
     int center_factor = (this->side_size-1)/2;
     for (i=0; i<this->side_size-1; i++){
         for (j=0; j<this->side_size-1; j++){
-            point4 p1 = point4(NORMALIZE(i-center_factor,center_factor),
-                                NORMALIZE(j-center_factor,center_factor),
-                                terrain[i][j],1.0);
-            point4 p2 = point4(NORMALIZE(i-center_factor,center_factor),
-                                NORMALIZE(j+1-center_factor,center_factor),
-                                terrain[i][j+1],1.0);
-            point4 p3 = point4(NORMALIZE(i+1-center_factor,center_factor),
-                                NORMALIZE(j+1-center_factor,center_factor),
-                                terrain[i+1][j+1],1.0);
-            point4 p4 = point4(NORMALIZE(i+1-center_factor,center_factor),
-                                NORMALIZE(j-center_factor,center_factor),
-                                terrain[i+1][j],1.0);
+            point4 p1 = point4(i-center_factor,j-center_factor,terrain[i][j],1.0);
+            point4 p2 = point4(i-center_factor,j+1-center_factor,terrain[i][j+1],1.0);
+            point4 p3 = point4(i+1-center_factor,j+1-center_factor,terrain[i+1][j+1],1.0);
+            point4 p4 = point4(i+1-center_factor,j-center_factor,terrain[i+1][j],1.0);
             color4 high = color4(.95f, .95f, .95f, 1.0); // White
             color4 mid = color4(.05f, .75f, .45f, 1.0); // Green
             color4 low = color4(.05f, .05f, .95f, 1.0); // Blue
@@ -203,9 +191,9 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     normals[this->num_points] = normal;
     if (p1.z == 0){
         colors[this->num_points++] = low;
-    } else if (p1.z < 0.5){
+    } else if (p1.z < 0.5*this->range){
         colors[this->num_points++] = mid;
-    } else if (p1.z < 0.75){
+    } else if (p1.z < 0.75*this->range){
         colors[this->num_points++] = brown;
     } else {
         colors[this->num_points++] = high;
@@ -214,9 +202,9 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     normals[this->num_points] = normal;
     if (p2.z == 0){
         colors[this->num_points++] = low;
-    } else if (p2.z < 0.5){
+    } else if (p2.z < 0.5*this->range){
         colors[this->num_points++] = mid;
-    } else if (p3.z < 0.75){
+    } else if (p3.z < 0.75*this->range){
         colors[this->num_points++] = brown;
     } else {
         colors[this->num_points++] = high;
@@ -225,9 +213,9 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     normals[this->num_points] = normal;
     if (p3.z == 0){
         colors[this->num_points++] = low;
-    } else if (p3.z < 0.5){
+    } else if (p3.z < 0.5*this->range){
         colors[this->num_points++] = mid;
-    } else if (p3.z < 0.75){
+    } else if (p3.z < 0.75*this->range){
         colors[this->num_points++] = brown;
     } else {
         colors[this->num_points++] = high;
@@ -248,4 +236,8 @@ vec3 *Terrain::getNormals(){
 
 int Terrain::getNumPoints(){
     return this->num_points;
+}
+
+int Terrain::getSideSize(){
+    return this->side_size;
 }

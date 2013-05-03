@@ -48,6 +48,7 @@ class Terrain {
         color4 *getColors();
         vec3 *getNormals();
         int getNumPoints();
+        int getSideSize();
         void dumpHeightMap();
 };
 

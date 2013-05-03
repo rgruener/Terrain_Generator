@@ -36,7 +36,7 @@ void main()
     specular = vec4(0.0, 0.0, 0.0, 1.0);
     } 
 
-    gl_Position = ModelView * vPosition;
+    gl_Position = Projection * ModelView * vPosition;
 
     color = (ambient + diffuse + specular)*vColor;
     color.w = 1.0;
