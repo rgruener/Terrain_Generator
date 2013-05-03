@@ -157,7 +157,7 @@ void reshape( int width, int height ){
     glViewport( 0, 0, width, height );
 
     GLfloat aspect = GLfloat(width)/height;
-    mat4  projection = Perspective( 45.0, aspect, 0.5, 3.0 );
+    mat4  projection = Perspective( 45.0, aspect, 0, 3.0 );
 
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
 }
