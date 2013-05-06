@@ -8,7 +8,7 @@
 
 #define RAND_NUM(num_range) (-num_range + ((float)rand()/((float)RAND_MAX))*(2*num_range))
 #define NORMALIZE(point,factor) ((float)(point)/(float)(factor*1.3f))
-#define POSITIVE(num) (num = num > 0.0 ? num : 0)
+#define POSITIVE(num) (num = num < 0.0 ? num : 0)
 
 Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float roughness_constant /* = 0.7f */, 
                     float range /* = 1.0f */, float init_height /* = 0f */){
@@ -187,7 +187,7 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     point4 p3_new = point4(p3.x, p3.y, POSITIVE(p3.z), p3.w);
     vec4 u = p2_new - p1_new;
     vec4 v = p3_new - p1_new;
-    vec3 normal = normalize( cross(u, v) );
+    vec3 normal = -normalize( cross(u, v) );
 
     if (this->points.size() < this->num_points + 5){
         this->points.resize(2*this->points.size());
@@ -199,9 +199,9 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     normals[this->num_points] = normal;
     if (p1.z == 0){
         colors[this->num_points++] = low;
-    } else if (p1.z < 0.5*this->range){
+    } else if (p1.z > -0.5*this->range){
         colors[this->num_points++] = mid;
-    } else if (p1.z < 0.75*this->range){
+    } else if (p1.z > -0.75*this->range){
         colors[this->num_points++] = brown;
     } else {
         colors[this->num_points++] = high;
@@ -210,9 +210,9 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     normals[this->num_points] = normal;
     if (p2.z == 0){
         colors[this->num_points++] = low;
-    } else if (p2.z < 0.5*this->range){
+    } else if (p2.z > -0.5*this->range){
         colors[this->num_points++] = mid;
-    } else if (p3.z < 0.75*this->range){
+    } else if (p3.z > -0.75*this->range){
         colors[this->num_points++] = brown;
     } else {
         colors[this->num_points++] = high;
@@ -221,9 +221,9 @@ void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 m
     normals[this->num_points] = normal;
     if (p3.z == 0){
         colors[this->num_points++] = low;
-    } else if (p3.z < 0.5*this->range){
+    } else if (p3.z > -0.5*this->range){
         colors[this->num_points++] = mid;
-    } else if (p3.z < 0.75*this->range){
+    } else if (p3.z > -0.75*this->range){
         colors[this->num_points++] = brown;
     } else {
         colors[this->num_points++] = high;

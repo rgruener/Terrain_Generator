@@ -22,9 +22,9 @@ vec3 *normals;
 // Array of rotation angles (in degrees) for each coordinate axis
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int      Axis = Xaxis;
-GLfloat  Theta[NumAxes] = { 0.0, 0.0, 0.0 };
+GLfloat  Theta[NumAxes] = { 90.0, 0.0, 0.0 };
 GLfloat scale = 1.0;
-GLfloat translate[NumAxes] = {0.0, 0.0, 0.0};
+GLfloat translate[NumAxes] = {0.0, 10.0, -5.0};
 
 // Array for command line arguments
 int method = TRIANGLES;
@@ -110,8 +110,8 @@ void init(){
     //glUniform1i( glGetUniformLocation(program, "texGrass"), 0);
 
     // Initialize shader lighting parameters
-    point4 light_position( 0.2, 0.2, -1.0, 0.0 );
-    color4 light_ambient( 0.5, 0.5, 0.5, 1.0 );
+    point4 light_position( 10.0, 0.0, 0.0, 0.0 );
+    color4 light_ambient( 0.6, 0.6, 0.6, 1.0 );
     color4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
     color4 light_specular( 1.0, 1.0, 1.0, 1.0 );
 
@@ -179,7 +179,7 @@ void reshape( int width, int height ){
     GLfloat center_factor = (terrain->getSideSize()-1.0f) / 2.0f;
     mat4  projection = Ortho(-center_factor,center_factor,-center_factor,center_factor,
                                 -sqrt(terrain->getSideSize()-1)*10,sqrt(terrain->getSideSize()-1)*10);
-    //projection = Perspective(45.0,aspect,0.5,-3000);
+    projection = Perspective(45.0,aspect,0.5,-3000);
     //projection = mat4(1.0f);
     cout << projection << endl;
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection);
@@ -188,7 +188,7 @@ void reshape( int width, int height ){
 //----------------------------------------------------------------------------
 
 void keyboard( unsigned char key, int x, int y ){
-    float translate_factor = .1;
+    float translate_factor = .4;
     switch( key ) {
         case 'w':
             translate[Yaxis] += translate_factor;
@@ -269,7 +269,7 @@ void mouse( int button, int state, int x, int y ){
 void mouse_move(int x, int y){
     if(dragging) {
         Theta[Xaxis] += (y - drag_y_origin)*0.2;
-        Theta[Yaxis] += (x - drag_x_origin)*0.2;
+        Theta[Zaxis] += (x - drag_x_origin)*0.2;
         drag_x_origin = x;
         drag_y_origin = y;
         glutPostRedisplay();
