@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cmath>
+//#include "tga_loader.cpp"
+#include <string>
 
 using namespace std;
 
@@ -27,13 +29,18 @@ GLfloat translate[NumAxes] = {0.0, 0.0, 0.0};
 // Array for command line arguments
 int method = TRIANGLES;
 int terrain_order = 5;
-float roughness_constant = 0.7;
-float range = 0.8;
+float roughness_constant = 0.9;
+float range = 0.5;
 float init_height = 0.0;
 
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection;
 GLuint buffer;
+
+int width, height;
+unsigned char* grass;
+char grass_fname[] = "grass.tga";
+GLuint textures[2];
 
 double camera_angle_h = 0;
 double camera_angle_v = 0;
@@ -44,10 +51,13 @@ int drag_y_origin;
 int dragging = 0;
 int scaling = 0;
 
+
 //----------------------------------------------------------------------------
 
 // OpenGL initialization
 void init(){
+    //grass = rgb_tga(grass_fname, &height, &width); 
+    //glGenTextures( 2, textures );
 
     terrain = new Terrain(method, terrain_order, roughness_constant, range, init_height);
 
@@ -93,6 +103,12 @@ void init(){
     glVertexAttribPointer( vNormal, 3, GL_FLOAT, GL_FALSE, 0,
                BUFFER_OFFSET((sizeof(point4)+sizeof(color4))*numVertices) );
 
+    //glActiveTexture( GL_TEXTURE0);
+    //glBindTexture( GL_TEXTURE_2D, textures[0]);
+
+    //glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, grass);
+    //glUniform1i( glGetUniformLocation(program, "texGrass"), 0);
+
     // Initialize shader lighting parameters
     point4 light_position( 0.2, 0.2, -1.0, 0.0 );
     color4 light_ambient( 0.5, 0.5, 0.5, 1.0 );
@@ -136,7 +152,8 @@ void init(){
 void display( void ){
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
-    mat4 mv = Translate(-translate[Xaxis],0,-translate[Yaxis]) * Scale(scale,scale,scale) * RotateY(Theta[Yaxis]) * RotateX(Theta[Xaxis]);
+    mat4 mv = Translate(-translate[Xaxis],0,-translate[Yaxis]) * Scale(scale,scale,scale) * 
+                RotateX(Theta[Xaxis]) * RotateY(Theta[Yaxis]) * RotateZ(Theta[Zaxis]);
     mat4 rot;
 
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, mv );
@@ -160,10 +177,11 @@ void reshape( int width, int height ){
 
     GLfloat aspect = GLfloat(width)/height;
     GLfloat center_factor = (terrain->getSideSize()-1.0f) / 2.0f;
-    mat4  projection = Ortho(-center_factor,center_factor,-center_factor,center_factor,sqrt(terrain->getSideSize()-1)*2,0.0f);
-    //projection = Perspective(45.0,aspect,(center_factor+1)*10,0.f);
+    mat4  projection = Ortho(-center_factor,center_factor,-center_factor,center_factor,
+                                -sqrt(terrain->getSideSize()-1)*10,sqrt(terrain->getSideSize()-1)*10);
+    //projection = Perspective(45.0,aspect,0.5,-3000);
     //projection = mat4(1.0f);
-
+    cout << projection << endl;
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection);
 }
 

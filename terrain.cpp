@@ -17,10 +17,11 @@ Terrain::Terrain(int method /*=TRIANGLES */, int terrain_order /*= 8 */, float r
     this->roughness_constant = roughness_constant;
     this->method = method;
     this->range = range * terrain_order * height_factor;
-    this->points.resize(pow(this->side_size*4,2));
-    this->colors.resize(pow(this->side_size*4,2));
-    this->normals.resize(pow(this->side_size*4,2));
+    this->points.resize(pow(this->side_size,2));
+    this->colors.resize(pow(this->side_size,2));
+    this->normals.resize(pow(this->side_size,2));
     this->terrain.resize(this->side_size);
+    this->num_points = 0;
     for (int i=0; i < side_size; i++){
         terrain[i].resize(side_size,init_height);
     }
@@ -180,12 +181,19 @@ void Terrain::dumpHeightMap(){
 }
 
 void Terrain::addTriangle(point4 p1, point4 p2, point4 p3, color4 high, color4 mid, color4 low, color4 brown){
+
     point4 p1_new = point4(p1.x, p1.y, POSITIVE(p1.z), p1.w);
     point4 p2_new = point4(p2.x, p2.y, POSITIVE(p2.z), p2.w);
     point4 p3_new = point4(p3.x, p3.y, POSITIVE(p3.z), p3.w);
     vec4 u = p2_new - p1_new;
     vec4 v = p3_new - p1_new;
     vec3 normal = normalize( cross(u, v) );
+
+    if (this->points.size() < this->num_points + 5){
+        this->points.resize(2*this->points.size());
+        this->normals.resize(2*this->points.size());
+        this->colors.resize(2*this->points.size());
+    }
 
     points[this->num_points] = p1_new;
     normals[this->num_points] = normal;
