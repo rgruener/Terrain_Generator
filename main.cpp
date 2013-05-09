@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cmath>
-//#include "tga_loader.cpp"
 #include <string>
 
 using namespace std;
@@ -24,14 +23,14 @@ enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int      Axis = Xaxis;
 GLfloat  Theta[NumAxes] = { 90.0, 0.0, 0.0 };
 GLfloat scale = 1.0;
-GLfloat translate[NumAxes] = {0.0, 10.0, -5.0};
+GLfloat translate[NumAxes] = {0.0, 20.0, 100.0};
 
 // Array for command line arguments
 int method = TRIANGLES;
-int terrain_order = 5;
-float roughness_constant = 0.9;
+int terrain_order = 8;
+float roughness_constant = 0.95;
 float range = 0.5;
-float init_height = 0.0;
+float init_height = -0.2;
 
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection;
@@ -42,8 +41,9 @@ unsigned char* grass;
 char grass_fname[] = "grass.tga";
 GLuint textures[2];
 
-double camera_angle_h = 0;
-double camera_angle_v = 0;
+// Array For Multiple Key Presses at Once
+enum {Up_Arrow = 0, Down_Arrow = 1, Left_Arrow = 2, Right_Arrow = 3};
+bool keys[256];
 
 int numVertices;
 int drag_x_origin;
@@ -56,8 +56,10 @@ int scaling = 0;
 
 // OpenGL initialization
 void init(){
-    //grass = rgb_tga(grass_fname, &height, &width); 
-    //glGenTextures( 2, textures );
+    int i;
+    for (i=0; i< 256; i++){
+        keys[i] = false;
+    }
 
     terrain = new Terrain(method, terrain_order, roughness_constant, range, init_height);
 
@@ -110,15 +112,15 @@ void init(){
     //glUniform1i( glGetUniformLocation(program, "texGrass"), 0);
 
     // Initialize shader lighting parameters
-    point4 light_position( 10.0, 0.0, 0.0, 0.0 );
-    color4 light_ambient( 0.6, 0.6, 0.6, 1.0 );
+    point4 light_position( 10.0, 2.0, 10.0, 0.0 );
+    color4 light_ambient( 0.2, 0.2, 0.2, 1.0 );
     color4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
     color4 light_specular( 1.0, 1.0, 1.0, 1.0 );
 
     color4 material_ambient( 1.0, 1.0, 1.0, 1.0 );
-    color4 material_diffuse( 1.0, 0.8, 0.8, 1.0 );
+    color4 material_diffuse( 0.8, 0.95, 0.8, 1.0 );
     color4 material_specular( 1.0, 0.8, 0.8, 1.0 );
-    float  material_shininess = 20.0;
+    float  material_shininess = 50;
 
     color4 ambient_product = light_ambient * material_ambient;
     color4 diffuse_product = light_diffuse * material_diffuse;
@@ -144,18 +146,47 @@ void init(){
     glEnable( GL_DEPTH_TEST );
 
     glShadeModel(GL_SMOOTH);
-    glClearColor( .1, .1, .1, 1.0 ); 
+    glClearColor( .296, .7, .9, 1.0 ); 
+}
+
+//----------------------------------------------------------------------------
+
+void process_keys(){
+    float angle_factor = .1;
+    float translate_factor = .1;
+    float scale_factor = .01;
+    if (keys[Up_Arrow])
+        Theta[Xaxis] += angle_factor;
+    if (keys[Down_Arrow])
+        Theta[Xaxis] -= angle_factor;
+    if (keys[Left_Arrow])
+        Theta[Zaxis] -= angle_factor;
+    if (keys[Right_Arrow])
+        Theta[Zaxis] += angle_factor;
+    if (keys['w'])
+        translate[Zaxis] -= translate_factor;
+    if (keys['s'])
+        translate[Zaxis] += translate_factor;
+    if (keys['a'])
+        translate[Xaxis] -= translate_factor;
+    if (keys['d'])
+        translate[Xaxis] += translate_factor;
+
+    if (Theta[Xaxis] > 360.0)
+        Theta[Xaxis] -= 360.0;
+    if (Theta[Yaxis] > 360.0)
+        Theta[Yaxis] -= 360.0;
 }
 
 //----------------------------------------------------------------------------
 
 void display( void ){
+    process_keys();
+
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
-    mat4 mv = Translate(-translate[Xaxis],0,-translate[Yaxis]) * Scale(scale,scale,scale) * 
+    mat4 mv = Translate(-translate[Xaxis],-translate[Yaxis],-translate[Zaxis]) * Scale(scale,scale,scale) * 
                 RotateX(Theta[Xaxis]) * RotateY(Theta[Yaxis]) * RotateZ(Theta[Zaxis]);
-    mat4 rot;
-
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, mv );
 
     switch(method){
@@ -177,30 +208,25 @@ void reshape( int width, int height ){
 
     GLfloat aspect = GLfloat(width)/height;
     GLfloat center_factor = (terrain->getSideSize()-1.0f) / 2.0f;
-    mat4  projection = Ortho(-center_factor,center_factor,-center_factor,center_factor,
-                                -sqrt(terrain->getSideSize()-1)*10,sqrt(terrain->getSideSize()-1)*10);
-    projection = Perspective(45.0,aspect,0.5,-3000);
-    //projection = mat4(1.0f);
-    cout << projection << endl;
+    mat4 projection = Perspective(50.0,aspect,0.5,-4000);
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection);
 }
 
 //----------------------------------------------------------------------------
 
 void keyboard( unsigned char key, int x, int y ){
-    float translate_factor = .4;
     switch( key ) {
         case 'w':
-            translate[Yaxis] += translate_factor;
+            keys['w'] = true;
             break;
         case 's':
-            translate[Yaxis] -= translate_factor;
+            keys['s'] = true;
             break;
         case 'a':
-            translate[Xaxis] -= translate_factor;
+            keys['a'] = true;
             break;
         case 'd':
-            translate[Xaxis] += translate_factor;
+            keys['d'] = true;
             break;
         case 033:  // Escape key
             exit( EXIT_SUCCESS );
@@ -211,31 +237,61 @@ void keyboard( unsigned char key, int x, int y ){
 
 //----------------------------------------------------------------------------
 
-void special_keyboard( int key, int x, int y ){
-    int angle_factor = 4;
-    float scale_factor = .01;
+void keyboard_up( unsigned char key, int x, int y ){
     switch( key ) {
-        case GLUT_KEY_LEFT:
-            //Theta[Yaxis] += angle_factor;
-            translate[Xaxis] -= scale_factor;
+        case 'w':
+            keys['w'] = false;
             break;
-        case GLUT_KEY_RIGHT:
-            //Theta[Yaxis] -= angle_factor;
-            translate[Xaxis] += scale_factor;
+        case 's':
+            keys['s'] = false;
             break;
-        case GLUT_KEY_UP:
-            //scale += scale_factor;
-            translate[Yaxis] += scale_factor;
+        case 'a':
+            keys['a'] = false;
             break;
-        case GLUT_KEY_DOWN:
-            //scale -= scale_factor;
-            translate[Yaxis] -= scale_factor;
+        case 'd':
+            keys['d'] = false;
             break;
     }
-    if (Theta[Xaxis] > 360.0)
-        Theta[Xaxis] -= 360.0;
-    if (Theta[Yaxis] > 360.0)
-        Theta[Yaxis] -= 360.0;
+    glutPostRedisplay();
+}
+
+//----------------------------------------------------------------------------
+
+void special_keyboard( int key, int x, int y ){
+    switch( key ) {
+        case GLUT_KEY_LEFT:
+            keys[Left_Arrow] = true;
+            break;
+        case GLUT_KEY_RIGHT:
+            keys[Right_Arrow] = true;
+            break;
+        case GLUT_KEY_UP:
+            keys[Up_Arrow] = true;
+            break;
+        case GLUT_KEY_DOWN:
+            keys[Down_Arrow] = true;
+            break;
+    }
+    glutPostRedisplay();
+}
+
+//----------------------------------------------------------------------------
+
+void special_keyboard_up( int key, int x, int y ){
+    switch( key ) {
+        case GLUT_KEY_LEFT:
+            keys[Left_Arrow] = false;
+            break;
+        case GLUT_KEY_RIGHT:
+            keys[Right_Arrow] = false;
+            break;
+        case GLUT_KEY_UP:
+            keys[Up_Arrow] = false;
+            break;
+        case GLUT_KEY_DOWN:
+            keys[Down_Arrow] = false;
+            break;
+    }
     glutPostRedisplay();
 }
 
@@ -268,8 +324,8 @@ void mouse( int button, int state, int x, int y ){
 
 void mouse_move(int x, int y){
     if(dragging) {
-        Theta[Xaxis] += (y - drag_y_origin)*0.2;
-        Theta[Zaxis] += (x - drag_x_origin)*0.2;
+        Theta[Xaxis] += (y - drag_y_origin)*0.17;
+        Theta[Yaxis] += (x - drag_x_origin)*0.17;
         drag_x_origin = x;
         drag_y_origin = y;
         glutPostRedisplay();
@@ -278,6 +334,16 @@ void mouse_move(int x, int y){
         drag_x_origin = x;
         drag_y_origin = y;
         glutPostRedisplay();
+    }
+}
+
+//----------------------------------------------------------------------------
+
+void idle(){
+    int i;
+    for (i=0; i<256; i++){
+        if (keys[i])
+            glutPostRedisplay();
     }
 }
 
@@ -341,11 +407,13 @@ int main( int argc, char **argv ){
     glutDisplayFunc( display );
     glutReshapeFunc( reshape );
     glutKeyboardFunc( keyboard );
+    glutKeyboardUpFunc( keyboard_up );
+    glutSpecialUpFunc( special_keyboard_up );
     glutSpecialFunc( special_keyboard );
     glutMouseFunc( mouse );
     glutMotionFunc( mouse_move );
     glutMouseWheelFunc( mouse_wheel );
-    //glutIdleFunc( idle );
+    glutIdleFunc( idle );
 
     glutMainLoop();
     return 0;

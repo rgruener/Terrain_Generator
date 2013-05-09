@@ -21,7 +21,7 @@ void main()
     vec3 H = normalize( L + E );
 
     // Transform vertex normal into eye coordinates
-    vec3 N = normalize( ModelView*vec4(vNormal, 0.0) ).xyz;
+    vec3 N = normalize( ModelView*vec4(-vNormal, 0.0) ).xyz;
 
     // Compute terms in the illumination equation
     vec4 ambient = AmbientProduct;
