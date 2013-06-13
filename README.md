@@ -11,7 +11,7 @@ The goal of this project is to generate realistic looking terrain
 which could be used in computer generated films, games, or simulations.
 Algorithm is based on http://www.gameprogrammer.com/fractal.html
 
-This project was created for ECE462 Integrated Engineering Graphics at
+This project was created for ECE462 Interactive Engineering Graphics at
 Cooper Union taught by Professor Carl Sable in the Spring 2013 Term
 
 ## Dependencies ##
