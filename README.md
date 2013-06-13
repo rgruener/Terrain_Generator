@@ -3,19 +3,22 @@ Terrain_Generator
 
 Automatically generate terrain using openGL
 
+![Sample Image 1](https://raw.github.com/rgruener/Terrain_Generator/master/sample_images/image1.png)
+
 ## Description ##
 
 The goal of this project is to generate realistic looking terrain 
 which could be used in computer generated films, games, or simulations.
+Algorithm is based on http://www.gameprogrammer.com/fractal.html
 
 This project was created for ECE462 Integrated Engineering Graphics at
 Cooper Union taught by Professor Carl Sable in the Spring 2013 Term
 
 ## Dependencies ##
 
-OpenGL 3.0 or Higher
-GLUT
-GLEW
+* OpenGL 3.0 or Higher
+* GLUT
+* GLEW
 
 ## Compilation ##
 
@@ -64,3 +67,5 @@ Mouse Drag (Either right or left click) - Alternate Rotate
 Mouse Wheel - Zoom (Only works within certain environments)
 
 Controls are similar to those of games.
+
+![Sample Image 2](https://raw.github.com/rgruener/Terrain_Generator/master/sample_images/image2.png)
